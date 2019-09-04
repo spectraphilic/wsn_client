@@ -7,7 +7,7 @@ import requests
 
 
 HOST = 'https://wsn.latice.eu'
-HOST = 'http://localhost:8000'  # For the developer
+#HOST = 'http://localhost:8000'  # For the developer
 
 # Prepare the session
 TOKEN = os.getenv('WSN_TOKEN') # export WSN_TOKEN=xxx

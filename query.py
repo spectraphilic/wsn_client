@@ -1,6 +1,6 @@
 import datetime
 import os
-import pprint
+import time
 
 import pandas as pd
 import requests
@@ -16,18 +16,17 @@ session.headers.update({'Authorization': f'Token {TOKEN}'})
 
 
 def query(
-    db,                  # postgresql or clickhouse
-    fields=None,         # Fields to return (all by default)
-    tags=None,           # Tags to return (all by default)
-    time__gte=None, time__lte=None, # Filter by time range
-    limit=100,
-    # Use aggregates to reduce the amount of data retrieved
-    interval=None,
-    interval_agg='avg',
-    # Not sent to the API
-    format='pandas',     # pandas or json
-    verbose=0,
-    **kw):
+    db,                                # postgresql or clickhouse
+    table=None,                        # clickhouse table name
+    fields=None,                       # Fields to return: all by default
+    tags=None,                         # postgresql metadata fields (none by default)
+    time__gte=None, time__lte=None,    # Time range
+    limit=100,                         # Limit
+    interval=None, interval_agg='avg', # Aggregates
+    format='pandas',                   # pandas or json
+    debug=False,
+    **kw                               # postgresql filters (name, serial, ...)
+    ):
 
     """
     query('clickhouse', table='', ...) -> dataframe or dict
@@ -175,9 +174,11 @@ def query(
     Debugging
     ===========================
 
-    Using the verbose parameter this function will print some information, useful
-    for debugging. Possible values are: 0 (default), 1 and 2.
+    With debug=True this function will print some information, useful for
+    testing. Default is False.
     """
+
+    t0 = time.perf_counter()
 
     url = HOST + f'/api/query/{db}/'
 
@@ -188,11 +189,12 @@ def query(
         time__lte = int(time__lte.timestamp())
 
     params = {
-        'limit': limit,                                 # Pagination
-        'time__gte': time__gte, 'time__lte': time__lte, # Time filter
+        'table': table,
         'fields': fields,
         'tags': tags,
-        'interval': interval,
+        'time__gte': time__gte, 'time__lte': time__lte,
+        'limit': limit,
+        'interval': interval, 'interval_agg': interval_agg,
     }
 
     # Filter inside json
@@ -214,146 +216,96 @@ def query(
     response.raise_for_status()
     json = response.json()
 
-    # Debug
-    if verbose > 0:
-        print(db)
-        pprint.pprint(params)
-        if verbose > 1:
-            pprint.pprint(json)
-        print()
-
-    if format == 'json':
-        return json
-
+    data = json
     if format == 'pandas':
-        if json['format'] == 'sparse':
-            df = pd.io.json.json_normalize(json['rows'])
+        if data['format'] == 'sparse':
+            data = pd.io.json.json_normalize(data['rows'])
         else:
-            df = pd.DataFrame(json['rows'], columns=json['columns'])
+            data = pd.DataFrame(data['rows'], columns=data['columns'])
 
         #try:
-        #    df.time = pd.to_datetime(df.time, unit='s')
+        #    data.time = pd.to_datetime(data.time, unit='s')
         #except:
         #    print('WARNING: no timestamp')
 
-        if verbose > 0:
-            print(df)
+    t1 = time.perf_counter()
 
-        return df
+    # Debug
+    if debug:
+        size = response.headers['Content-Length']
+        print('===========================')
+        print(f'{response.request.url}')
+        print(f'Returns {size} bytes in {(t1-t0):.2f} seconds')
+        print()
+        print(data)
+        print()
+
+    return data
 
 
 if __name__ == '__main__':
-    # Number of elements to return in every query
+    time_left = datetime.datetime(2018, 3, 1, tzinfo=datetime.timezone.utc)
+    time_right = datetime.datetime(2018, 4, 1, tzinfo=datetime.timezone.utc)
     limit = 2
-
 
     #
     # Return all the columns, usefult to know which columns exist
     #
+    response = query('postgresql', name='LATICE-Flux Finse',
+                     time__gte=time_left, time__lte=time_right,
+                     limit=1, debug=True)
 
-    print('==============================================')
-    response = query(
-        'postgresql', name='LATICE-Flux Finse',
-        limit=1,
-        verbose=1,
-    )
+    response = query('clickhouse', table='finseflux_Biomet',
+                     time__gte=time_left, time__lte=time_right,
+                     limit=1, debug=True)
 
-#   print('==============================================')
-#   response = query(
-#       'clickhouse', table='finseflux_Biomet',
-#       limit=1,
-#       verbose=1,
-#   )
+    #
+    # Select a coupe of columns within a time range
+    #
+    response = query('postgresql', name='LATICE-Flux Finse',
+                     fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
+                     time__gte=time_left, time__lte=time_right,
+                     limit=limit, debug=True)
 
-#   #
-#   # Select a coupe of columns withing a time range
-#   #
+    response = query('clickhouse', table='finseflux_Biomet',
+                     fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
+                     time__gte=time_left, time__lte=time_right,
+                     limit=limit, debug=True)
 
-#   print('==============================================')
-#   response = query(
-#       'postgresql', name='LATICE-Flux Finse',
-#       fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
-#       time__gte=datetime.datetime(2018, 3, 1, tzinfo=datetime.timezone.utc),
-#       time__lte=datetime.datetime(2018, 4, 1, tzinfo=datetime.timezone.utc),
-#       limit=limit,
-#       verbose=1,
-#       #format='json',
-#   )
+    #
+    # Select the average value in 1h intervals
+    #
+    response = query('postgresql', name='LATICE-Flux Finse',
+                     fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
+                     time__gte=time_left, time__lte=time_right,
+                     interval=3600,
+                     limit=limit, debug=True)
 
-#   print('==============================================')
-#   response = query(
-#       'clickhouse', table='finseflux_Biomet',
-#       fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
-#       time__gte=datetime.datetime(2018, 3, 1, tzinfo=datetime.timezone.utc),
-#       time__lte=datetime.datetime(2018, 4, 1, tzinfo=datetime.timezone.utc),
-#       limit=limit,
-#       verbose=1,
-#       #format='json',
-#   )
+    response = query('clickhouse', table='finseflux_Biomet',
+                     fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
+                     time__gte=time_left, time__lte=time_right,
+                     interval=3600,
+                     limit=limit, debug=True)
 
-#   #
-#   # Select the average value in 1h intervals
-#   #
+    #
+    # Use a different aggregate
+    #
+    response = query('postgresql', name='LATICE-Flux Finse',
+                     fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
+                     time__gte=time_left, time__lte=time_right,
+                     interval=3600, interval_agg='min',
+                     limit=limit, debug=True)
 
-#   print('==============================================')
-#   response = query(
-#       'postgresql', name='LATICE-Flux Finse',
-#       fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
-#       time__gte=datetime.datetime(2018, 3, 1, tzinfo=datetime.timezone.utc),
-#       time__lte=datetime.datetime(2018, 4, 1, tzinfo=datetime.timezone.utc),
-#       limit=limit,
-#       interval=3600,
-#       verbose=1,
-#   )
-
-#   print('==============================================')
-#   response = query(
-#       'clickhouse', table='finseflux_Biomet',
-#       fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
-#       time__gte=datetime.datetime(2018, 3, 1, tzinfo=datetime.timezone.utc),
-#       time__lte=datetime.datetime(2018, 4, 1, tzinfo=datetime.timezone.utc),
-#       limit=limit,
-#       interval=3600,
-#       verbose=1,
-#   )
-
-#   #
-#   # Use a different aggregate
-#   #
-
-#   print('==============================================')
-#   response = query(
-#       'postgresql', name='LATICE-Flux Finse',
-#       fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
-#       time__gte=datetime.datetime(2018, 3, 1, tzinfo=datetime.timezone.utc),
-#       time__lte=datetime.datetime(2018, 4, 1, tzinfo=datetime.timezone.utc),
-#       limit=limit,
-#       interval=3600,
-#       interval_agg='min',
-#       verbose=1,
-#   )
-
-#   print('==============================================')
-#   response = query(
-#       'clickhouse', table='finseflux_Biomet',
-#       fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
-#       time__gte=datetime.datetime(2018, 3, 1, tzinfo=datetime.timezone.utc),
-#       time__lte=datetime.datetime(2018, 4, 1, tzinfo=datetime.timezone.utc),
-#       limit=limit,
-#       interval=3600,
-#       interval_agg='min',
-#       verbose=1,
-#   )
+    response = query('clickhouse', table='finseflux_Biomet',
+                     fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
+                     time__gte=time_left, time__lte=time_right,
+                     interval=3600, interval_agg='min',
+                     limit=limit, debug=True)
 
     #
     # Specific to PostgreSQL, return tags
     #
 
-#   print('==============================================')
-#   response = query(
-#       'postgresql',
-#       fields=['bat', 'in_temp'],
-#       tags=['serial'],
-#       limit=limit,
-#       verbose=1,
-#   )
+    response = query('postgresql', fields=['bat', 'in_temp'],
+                     tags=['serial'],
+                     limit=limit, debug=True)

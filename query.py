@@ -22,7 +22,7 @@ def query(
     tags=None,                         # postgresql metadata fields (none by default)
     time__gte=None, time__lte=None,    # Time range
     limit=100,                         # Limit
-    interval=None, interval_agg='avg', # Aggregates
+    interval=None, interval_agg=None,  # Aggregates
     format='pandas',                   # pandas or json
     debug=False,
     **kw                               # postgresql filters (name, serial, ...)
@@ -110,19 +110,24 @@ def query(
             limit=1000000,
         )
 
-    Aggregates
+    Intervals and aggregates
     ===========================
 
     Instead of returning every data point, it's possible split the time range
-    in intervals and return an aggregate of every field over an interval. This
-    can greatly reduce the amount of data returned, speeding up the query.
+    in intervals and return only one row per interval. This can greatly reduce
+    the amount of data returned, speeding up the query.
 
     For this purpose pass the interval parameter, which defines the interval
-    size in seconds. The interval is left-closed and right-open. The time
-    column returned is at the beginning of the interval.
+    size in seconds. The interval is left-closed and right-open.
 
-    By default the aggregate function used is the average, pass the
-    interval_agg to specify a differente function.
+    By default the first row found within the interval will be returned. The
+    time column will be that of the first row. For example, if the interval
+    is 1 hour and the first row is at :05 then the time column will be :05
+
+    If the interval_agg parameter is passed, then an aggregate for every
+    column within the interval will be returned. The time column will be
+    the beginning of the interval. For example if the interval is 1h, the
+    time column will be :00
 
     Example (interval size is 5 minutes):
 
@@ -133,7 +138,7 @@ def query(
             time__lte=datetime.datetime(2018, 4, 1, tzinfo=datetime.timezone.utc),
             limit=1000000,
             interval=60*5,
-            interval_agg='min',
+            interval_agg='avg',
         )
 
     If using postgresql the available functions are: avg, count, max, min,
@@ -141,9 +146,6 @@ def query(
 
     If using clickhouse any aggregate function supported by ClickHouse can be
     used, see https://clickhouse-docs.readthedocs.io/en/latest/agg_functions/
-
-    Using aggregates requires the fields paramater as well, it doesn't work
-    when asking for all the fields.
 
     Tags (PostgreSQL only)
     ===========================
@@ -233,9 +235,9 @@ def query(
     # Debug
     if debug:
         size = response.headers['Content-Length']
-        print('===========================')
         print(f'{response.request.url}')
         print(f'Returns {size} bytes in {(t1-t0):.2f} seconds')
+        #import pprint; pprint.pprint(json)
         print()
         print(data)
         print()
@@ -251,51 +253,66 @@ if __name__ == '__main__':
     #
     # Return all the columns, usefult to know which columns exist
     #
+    print(' ALL COLUMNS '.center(72, '='))
     response = query('postgresql', name='LATICE-Flux Finse',
                      time__gte=time_left, time__lte=time_right,
                      limit=1, debug=True)
-
     response = query('clickhouse', table='finseflux_Biomet',
                      time__gte=time_left, time__lte=time_right,
                      limit=1, debug=True)
 
     #
-    # Select a coupe of columns within a time range
+    # Select a couple of columns within a time range
     #
+    print(' SELECTED COLS IN TIME-RANGE '.center(72, '='))
     response = query('postgresql', name='LATICE-Flux Finse',
                      fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
                      time__gte=time_left, time__lte=time_right,
                      limit=limit, debug=True)
-
     response = query('clickhouse', table='finseflux_Biomet',
                      fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
                      time__gte=time_left, time__lte=time_right,
+                     limit=limit, debug=True)
+
+    #
+    # Select the first row within 1h intervals
+    #
+    print(' FIRST ROW IN 1H INTERVALS '.center(72, '='))
+    response = query('postgresql', name='LATICE-Flux Finse',
+                     fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
+                     time__gte=time_left, time__lte=time_right,
+                     interval=3600,
+                     limit=limit, debug=True)
+    response = query('clickhouse', table='finseflux_Biomet',
+                     fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
+                     time__gte=time_left, time__lte=time_right,
+                     interval=3600,
                      limit=limit, debug=True)
 
     #
     # Select the average value in 1h intervals
     #
+    print(' AVERAGE IN 1H INTERVALS '.center(72, '='))
     response = query('postgresql', name='LATICE-Flux Finse',
                      fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
                      time__gte=time_left, time__lte=time_right,
-                     interval=3600,
+                     interval=3600, interval_agg='avg',
                      limit=limit, debug=True)
-
     response = query('clickhouse', table='finseflux_Biomet',
                      fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
                      time__gte=time_left, time__lte=time_right,
-                     interval=3600,
+                     interval=3600, interval_agg='avg',
                      limit=limit, debug=True)
 
     #
     # Use a different aggregate
     #
+    print(' MINIMUM IN 1H INTERVALS '.center(72, '='))
     response = query('postgresql', name='LATICE-Flux Finse',
                      fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
                      time__gte=time_left, time__lte=time_right,
                      interval=3600, interval_agg='min',
                      limit=limit, debug=True)
-
     response = query('clickhouse', table='finseflux_Biomet',
                      fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
                      time__gte=time_left, time__lte=time_right,
@@ -305,7 +322,7 @@ if __name__ == '__main__':
     #
     # Specific to PostgreSQL, return tags
     #
-
+    print(' TAGS '.center(72, '='))
     response = query('postgresql', fields=['bat', 'in_temp'],
                      tags=['serial'],
                      limit=limit, debug=True)

@@ -1,0 +1,12 @@
+LICENSE
+MANIFEST.in
+README.md
+setup.py
+wsn_client/__init__.py
+wsn_client/__version__.py
+wsn_client/query.py
+wsn_client.egg-info/PKG-INFO
+wsn_client.egg-info/SOURCES.txt
+wsn_client.egg-info/dependency_links.txt
+wsn_client.egg-info/requires.txt
+wsn_client.egg-info/top_level.txt

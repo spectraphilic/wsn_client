@@ -24,6 +24,7 @@ def query(
     limit=100,                         # Limit
     interval=None, interval_agg=None,  # Aggregates
     format='pandas',                   # pandas or json
+    time_index=True,                   # return pandas dataframe with time as index. Only valid if format 'pandas' is selected
     debug=False,
     **kw                               # postgresql filters (name, serial, ...)
     ):
@@ -190,6 +191,9 @@ def query(
     if time__lte:
         time__lte = int(time__lte.timestamp())
 
+    if interval_agg is 'mean':
+        interval_agg = 'avg'
+
     params = {
         'table': table,
         'fields': fields,
@@ -225,10 +229,12 @@ def query(
         else:
             data = pd.DataFrame(data['rows'], columns=data['columns'])
 
-        #try:
-        #    data.time = pd.to_datetime(data.time, unit='s')
-        #except:
-        #    print('WARNING: no timestamp')
+
+        if time_index:
+            try:
+                data.set_index(pd.to_datetime(data.time, unit='s'), inplace=True)
+            except:
+                print('WARNING: no timestamp available. Set time_index=False')
 
     t1 = time.perf_counter()
 

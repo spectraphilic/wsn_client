@@ -191,7 +191,7 @@ def query(
     if time__lte:
         time__lte = int(time__lte.timestamp())
 
-    if interval_agg is 'mean':
+    if interval_agg == 'mean':
         interval_agg = 'avg'
 
     params = {

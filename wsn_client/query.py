@@ -271,10 +271,10 @@ if __name__ == '__main__':
     # Select a couple of columns within a time range
     #
     print(' SELECTED COLS IN TIME-RANGE '.center(72, '='))
-    response = query('postgresql', name='LATICE-Flux Finse',
-                     fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
-                     time__gte=time_left, time__lte=time_right,
-                     limit=limit, debug=True)
+#   response = query('postgresql', name='LATICE-Flux Finse',
+#                    fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
+#                    time__gte=time_left, time__lte=time_right,
+#                    limit=limit, debug=True)
     response = query('clickhouse', table='finseflux_Biomet',
                      fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
                      time__gte=time_left, time__lte=time_right,
@@ -284,11 +284,11 @@ if __name__ == '__main__':
     # Select the first row within 1h intervals
     #
     print(' FIRST ROW IN 1H INTERVALS '.center(72, '='))
-    response = query('postgresql', name='LATICE-Flux Finse',
-                     fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
-                     time__gte=time_left, time__lte=time_right,
-                     interval=3600,
-                     limit=limit, debug=True)
+#   response = query('postgresql', name='LATICE-Flux Finse',
+#                    fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
+#                    time__gte=time_left, time__lte=time_right,
+#                    interval=3600,
+#                    limit=limit, debug=True)
     response = query('clickhouse', table='finseflux_Biomet',
                      fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
                      time__gte=time_left, time__lte=time_right,
@@ -299,11 +299,11 @@ if __name__ == '__main__':
     # Select the average value in 1h intervals
     #
     print(' AVERAGE IN 1H INTERVALS '.center(72, '='))
-    response = query('postgresql', name='LATICE-Flux Finse',
-                     fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
-                     time__gte=time_left, time__lte=time_right,
-                     interval=3600, interval_agg='avg',
-                     limit=limit, debug=True)
+#   response = query('postgresql', name='LATICE-Flux Finse',
+#                    fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
+#                    time__gte=time_left, time__lte=time_right,
+#                    interval=3600, interval_agg='avg',
+#                    limit=limit, debug=True)
     response = query('clickhouse', table='finseflux_Biomet',
                      fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
                      time__gte=time_left, time__lte=time_right,
@@ -314,11 +314,11 @@ if __name__ == '__main__':
     # Use a different aggregate
     #
     print(' MINIMUM IN 1H INTERVALS '.center(72, '='))
-    response = query('postgresql', name='LATICE-Flux Finse',
-                     fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
-                     time__gte=time_left, time__lte=time_right,
-                     interval=3600, interval_agg='min',
-                     limit=limit, debug=True)
+#   response = query('postgresql', name='LATICE-Flux Finse',
+#                    fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
+#                    time__gte=time_left, time__lte=time_right,
+#                    interval=3600, interval_agg='min',
+#                    limit=limit, debug=True)
     response = query('clickhouse', table='finseflux_Biomet',
                      fields=['LWIN_6_14_1_1_1', 'LWOUT_6_15_1_1_1'],
                      time__gte=time_left, time__lte=time_right,

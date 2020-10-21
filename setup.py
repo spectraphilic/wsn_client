@@ -22,7 +22,7 @@ REQUIRES_PYTHON = '>=3.6.0'
 VERSION = None
 
 # What packages are required for this module to be executed?
-REQUIRED = ['pandas', 'requests', 'datetime']
+REQUIRED = ['pandas>=1.0', 'requests']
 
 
 # The rest you shouldn't have to touch too much :)

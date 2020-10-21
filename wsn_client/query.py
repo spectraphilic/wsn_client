@@ -225,7 +225,7 @@ def query(
     data = json
     if format == 'pandas':
         if data['format'] == 'sparse':
-            data = pd.io.json.json_normalize(data['rows'])
+            data = pd.json_normalize(data['rows'])
         else:
             data = pd.DataFrame(data['rows'], columns=data['columns'])
 

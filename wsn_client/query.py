@@ -16,17 +16,19 @@ session.headers.update({'Authorization': f'Token {TOKEN}'})
 
 
 def query(
-    db,                                # postgresql or clickhouse
-    table=None,                        # clickhouse table name
-    fields=None,                       # Fields to return: all by default
-    tags=None,                         # postgresql metadata fields (none by default)
-    time__gte=None, time__lte=None,    # Time range
-    limit=100,                         # Limit
-    interval=None, interval_agg=None,  # Aggregates
-    format='pandas',                   # pandas or json
-    time_index=True,                   # return pandas dataframe with time as index. Only valid if format 'pandas' is selected
+    db,                                     # postgresql or clickhouse
+    table=None,                             # clickhouse table name
+    fields=None,                            # Fields to return: all by default
+    tags=None,                              # postgresql metadata fields (none by default)
+    time__gte=None, time__lte=None,         # Time range (sampled)
+    received__gte=None, received__lte=None, # Time range (received)
+    limit=100,                              # Limit
+    interval=None, interval_agg=None,       # Aggregates
+    format='pandas',                        # pandas or json
+    time_index=True,                        # Return pandas dataframe with time as index
+                                            # (only valid if format 'pandas' is selected)
     debug=False,
-    **kw                               # postgresql filters (name, serial, ...)
+    **kw                                    # postgresql filters (name, serial, ...)
     ):
 
     """
@@ -94,6 +96,12 @@ def query(
             time__lte=datetime.datetime(2018, 4, 1, tzinfo=datetime.timezone.utc),
             ...
         )
+
+    NOTE: 'time' is the sampled time, when the value was recorded by the data
+    logger. It's also possible to filter by the received time, when the gateway
+    received the data frame. For that purpose use `received__gte` and
+    `received__lte`. Note that not all frames have this information, for
+    example those that have been uploaded to the server from the SD card.
 
     Limiting the number of rows
     ===========================
@@ -186,10 +194,11 @@ def query(
     url = HOST + f'/api/query/{db}/'
 
     # Parameters
-    if time__gte:
-        time__gte = int(time__gte.timestamp())
-    if time__lte:
-        time__lte = int(time__lte.timestamp())
+    to_timestamp = lambda x: int(x.timestamp()) if x else x
+    time__gte = to_timestamp(time__gte)
+    time__lte = to_timestamp(time__lte)
+    received__gte = to_timestamp(received__gte)
+    received__lte = to_timestamp(received__lte)
 
     if interval_agg == 'mean':
         interval_agg = 'avg'
@@ -199,6 +208,7 @@ def query(
         'fields': fields,
         'tags': tags,
         'time__gte': time__gte, 'time__lte': time__lte,
+        'received__gte': received__gte, 'received__lte': received__lte,
         'limit': limit,
         'interval': interval, 'interval_agg': interval_agg,
     }

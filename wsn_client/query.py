@@ -6,14 +6,25 @@ import pandas as pd
 import requests
 
 
-HOST = 'https://wsn.latice.eu'
-#HOST = 'http://localhost:8000'  # For the developer
+# The host must be defined with an environement variable
+# e.g. export WSN_HOST="http://localhost:8000"
+HOST = os.getenv('WSN_HOST')
+if HOST is None:
+    print('Error: define the WSN_HOST environment variable')
+
+# The token must be defined with an environement variable
+# e.g. export WSN_TOKEN="...."
+TOKEN = os.getenv('WSN_TOKEN')
+if TOKEN is None:
+    print('Error: define the WSN_TOKEN environment variable')
+
+if HOST is None or TOKEN is None:
+    exit(1)
+
 
 # Prepare the session
-TOKEN = os.getenv('WSN_TOKEN') # export WSN_TOKEN=xxx
 session = requests.Session()
 session.headers.update({'Authorization': f'Token {TOKEN}'})
-
 
 def query(
     db,                                     # postgresql or clickhouse
@@ -191,7 +202,7 @@ def query(
 
     t0 = time.perf_counter()
 
-    url = HOST + f'/api/query/{db}/'
+    url = f'{HOST}/api/query/{db}/'
 
     # Parameters
     to_timestamp = lambda x: int(x.timestamp()) if x else x

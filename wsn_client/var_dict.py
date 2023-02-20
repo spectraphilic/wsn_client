@@ -1,9 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-
 '''
-Script containing dictionnary of variables correspondance for waspmote, Permanent CR6, mobile CR6 stations. To go from METNO naming convention to faster scripting variable name
+Script containing dictionnary of variables correspondance for waspmote, Permanent CR6,
+mobile CR6 stations. To go from METNO naming convention to faster scripting variable name
 
 S. Filhol
 '''
@@ -99,20 +96,3 @@ CR6_biomet_mobile = {
     'TS 2 38 3 1 1':                'ts',
     'VIN 18 39 1 1 1':              'vin',
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

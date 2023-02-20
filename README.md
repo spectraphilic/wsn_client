@@ -1,31 +1,46 @@
-# WSN_client
+# WSN\_client
 
-Contributors by alphabetical orders:
+This package contains client function to interact with the UiO Django App developed for
+the Wireless Sensor Network.
+
+Contributors by alphabetical order:
 
 - David J. Ibanez
 - Simon Filhol (simon.filhol@geo.uio.no)
 
-[TOC]
-
-## Description
-
-This package contains client function to interact with the UiO Django App developed for the Wireless Sensor Network. 
 
 ## Installation
 
-Install python 3.6, and with anaconda, create a virtual environment with the following packages: 
+Requires Python 3.7 or later. Create a virtual environment, with conda or venv,
+then install the package from the project repository:
 
-- pandas 
-- requests
 ```sh
-# clone the package to your computer
+# Create a virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install the package
+pip install git+https://github.com/spectraphilic/wsn_client.git
+```
+
+### For development
+
+Or clone the project first, specially if you need to change it:
+
+```sh
+# Clone the package to your computer
 git clone git@github.com:spectraphilic/wsn_client.git
+cd wsn_client
 
-# install the pachage
-pip install [path to package on your local machine]
+# Create a virtual environment
+python3 -m venv venv
+source venv/bin/activate
 
-# install a development version to your activated virtual environment
-pip install -e [path to package]
+# Install the package with "pip install [path to package on your local machine]"
+pip install .
+
+# Or install a development version to your activated virtual environment
+pip install --editable .
 ```
 
 ## Usage
@@ -155,7 +170,7 @@ If using postgresql the available functions are: `avg, count, max, min,
 stddev, sum and variance.`
 
 If using clickhouse any aggregate function supported by ClickHouse can be
-used, see https://clickhouse-docs.readthedocs.io/en/latest/agg_functions/
+used, see <https://clickhouse-docs.readthedocs.io/en/latest/agg_functions/>
 
 ### Tags (PostgreSQL only)
 
